@@ -36,6 +36,26 @@ When you build your project, the production build automatically uses the variabl
  ```ts
  NEXT_PUBLIC_BASE_API=http://localhost:5000/api/v1
  ```
+ - add this for image 
+ ```ts
+ import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  /* config options here */
+    images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+    
+      },
+    ],
+  },
+};
+
+export default nextConfig;
+
+```
  #### data fetching (public) page.tsx 
  ```ts
  /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -147,4 +167,66 @@ export default function BlogCard({ post }: { post: any }) {
     </Link>
   );
 }
+```
+
+## 53-3 Show off all the fantastic blogs using SSR
+- use ISR method after every  30 second ha re rendering the full page and show the update content
+- you update the any content in your data after 30 seconds show it
+- and this method only work in fetched data not full website
+```ts
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import BlogCard from "@/components/modules/Blogs/BlogCard";
+import Hero from "@/components/modules/Home/Hero";
+
+export default async function HomePage() {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_API}/post`,{
+    next:{
+      revalidate:30
+    }
+  });
+  const {data:blogs} = await res.json();
+ console.log(blogs)
+  return (
+    <div>
+      <Hero />
+      <h2 className="text-center my-5 text-4xl">Featured Posts abc</h2>
+      <div className=" grid grid-cols-3 gap-8 max-w-6xl text-4xl my-8 mx-auto">
+        {
+          blogs.slice(0,3).map((blog:any)=>(
+              <BlogCard key={blog?.id} post={blog}   />
+          ))
+        }
+      </div>
+    </div>
+  );
+}
+```
+- SSR implement in allBlogs page
+- when user request then data fetching in server side then give the data thats need some loading but instant send update data
+```ts
+import BlogCard from "@/components/modules/Blogs/BlogCard";
+import { IBlogPost } from "@/types";
+
+const AllBlogsPage = async () => {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_API}/post`,{
+    cache:"no-store"
+  });
+  const {data:blogs} = await res.json()
+
+  return (
+    <div className="py-30 px-4 max-w-7xl mx-auto">
+      <h2 className="text-center text-4xl">All Blogs page </h2>
+<div className="grid grid-cols-3 gap-4 my-4">
+{
+  blogs.map((blog:IBlogPost)=>(
+<BlogCard key={blog.id} post={blog}/>
+
+  ))
+}
+</div>
+    </div>
+  );
+};
+
+export default AllBlogsPage;
 ```
