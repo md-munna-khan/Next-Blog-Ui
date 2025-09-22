@@ -296,3 +296,94 @@ const BlogDetailsPage = async ({
 
 export default BlogDetailsPage;
 ```
+
+## 53-6 Generating Dynamic Metadata with generateMetadata()
+- build seo
+- use normally metadata function
+```ts
+import BlogCard from "@/components/modules/Blogs/BlogCard";
+import { IBlogPost } from "@/types";
+import { Metadata } from "next";
+
+
+export const metadata:Metadata = {
+  title:"All Blogs Page",
+  description:"Brows All blog Post on web development",
+
+}
+
+const AllBlogsPage = async () => {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_API}/post`,{
+    cache:"no-store"
+  });
+  const {data:blogs} = await res.json()
+
+  return (
+    <div className="py-30 px-4 max-w-7xl mx-auto">
+      <h2 className="text-center text-4xl">All Blogs page </h2>
+<div className="grid grid-cols-3 gap-4 my-4">
+{
+  blogs.map((blog:IBlogPost)=>(
+<BlogCard key={blog.id} post={blog}/>
+
+  ))
+}
+</div>
+    </div>
+  );
+};
+
+export default AllBlogsPage;
+
+```
+- use normally metadata function
+```ts
+import BlogDetailsCard from "@/components/modules/Blogs/BlogDetailsCard";
+import { IBlogPost } from "@/types";
+import React from "react";
+
+export const generateStaticParams = async () => {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_API}/post`);
+  const { data: blogs } = await res.json();
+  return blogs.slice(0,2).map((blog:IBlogPost)=>({
+blogId:String(blog.id)
+  }))
+};
+
+
+// dynamic metadata
+export const generateMetadata=async ({
+  params,
+}: {
+  params: Promise<{ blogId: string }>;
+}) => {
+  const { blogId } = await params;
+
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_API}/post/${blogId}`);
+  const blog = await res.json()
+return {
+    title:blog?.title,
+    description:blog?.content
+}
+}
+
+const BlogDetailsPage = async ({
+  params,
+}: {
+  params: Promise<{ blogId: string }>;
+}) => {
+  const { blogId } = await params;
+
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_API}/post/${blogId}`);
+  const blog = await res.json();
+
+  return (
+    <div className="max-w-7xl mx-auto py-30 px-4">
+      <BlogDetailsCard blog={blog} />
+    </div>
+  );
+};
+
+export default BlogDetailsPage;
+
+```
