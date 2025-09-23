@@ -6,7 +6,8 @@ import { IBlogPost } from "@/types";
 export default async function HomePage() {
   const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_API}/post`,{
     next:{
-      revalidate:30
+      // revalidate:30
+      tags:["BLOGS"]
     }
   });
   const {data:blogs} = await res.json();

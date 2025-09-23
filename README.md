@@ -506,3 +506,110 @@ export default function CreateBlogForm() {
 ![alt text](image-2.png)
 
 ## 53-8 Creating Blogs Using Next.js Server Actions
+- you must check how to post in postman string,boolean,number etc
+ and same to same you post data in your form
+ - use redirect   from "next/navigation";
+```ts
+
+"use server"
+
+import { redirect } from "next/navigation";
+
+export const create = async (data:FormData)=>{
+    const blogInfo = Object.fromEntries(data.entries());
+    const modifiedData = {
+        ...blogInfo,
+        authorId:1,
+        tags:blogInfo.tags
+        .toString()
+        .split(",")
+        .map((tag)=> tag.trim()),
+        isFeatured:Boolean(blogInfo.isFeatured)
+    };
+  
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_API}/post`,{
+   method:"POST",
+   headers:{
+    "Content-Type":"application/json"
+   },
+   body:JSON.stringify(modifiedData)
+  });
+  const result = await res.json();
+
+  if(result?.id){
+    redirect("/blogs")
+  }
+  return result
+}
+```
+
+## 53-9 Create Blog with Server Actions & Revalidate Homepage ISR
+- add tags not revalidate use because if you not create data but revalidate after every 30 seconds re render full page and presserud data base 
+
+```ts
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import BlogCard from "@/components/modules/Blogs/BlogCard";
+import Hero from "@/components/modules/Home/Hero";
+import { IBlogPost } from "@/types";
+
+export default async function HomePage() {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_API}/post`,{
+    next:{
+      ❌// revalidate:30
+      ✅tags:["BLOGS"]
+    }
+  });
+  const {data:blogs} = await res.json();
+
+  return (
+    <div>
+      <Hero />
+      <h2 className="text-center my-5 text-4xl">Featured Posts </h2>
+      <div className=" grid grid-cols-3 gap-8 max-w-6xl text-4xl my-8 mx-auto">
+        {
+          blogs.slice(0,3).map((blog:IBlogPost)=>(
+              <BlogCard key={blog?.id} post={blog}   />
+          ))
+        }
+      </div>
+    </div>
+  );
+}
+
+```
+- use   revalidateTag("BLOGS") because when you create data instant update your page 
+```ts
+"use server"
+
+import { revalidateTag } from "next/cache";
+import { redirect } from "next/navigation";
+
+export const create = async (data:FormData)=>{
+    const blogInfo = Object.fromEntries(data.entries());
+    const modifiedData = {
+        ...blogInfo,
+        authorId:1,
+        tags:blogInfo.tags
+        .toString()
+        .split(",")
+        .map((tag)=> tag.trim()),
+        isFeatured:Boolean(blogInfo.isFeatured)
+    };
+  
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_API}/post`,{
+   method:"POST",
+   headers:{
+    "Content-Type":"application/json"
+   },
+   body:JSON.stringify(modifiedData)
+  });
+  const result = await res.json();
+
+  if(result?.id){
+    revalidateTag("BLOGS")
+    redirect("/");
+ 
+  }
+  return result
+}
+```
